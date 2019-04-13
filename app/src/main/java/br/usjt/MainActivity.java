@@ -14,52 +14,55 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private LocationManager locationManager;
-    private LocationListener locationListener;
-    private static final int REQUEST_CODE_GPS = 1001;
+    private RecyclerView recyclerView;
+    private List<Localizacao> localizacoes;
+    private MyAdapter           adapter;
 
-    private double lat, lon;
-    private TextView locationTextView;
+    // API
+    private LocationListener    locationListener;
+    private LocationManager     locationManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        locationTextView = findViewById(R.id.locationTextView);
-        Toolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        // -------------------------------------------------------!
+        recyclerView    = findViewById(R.id.recyclerView);
+        localizacoes    = new ArrayList<>();
+        adapter         = new MyAdapter(localizacoes);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(adapter);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Uri uri = Uri.parse(String.format(Locale.getDefault(),"geo:%f,%f?q=metro",
-                        lat,lon))
-                        ;
-                Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-                intent.setPackage("com.google.android.apps.maps");
-                startActivity(intent);
-            }
-        });
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        // Manager
+        locationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+
+        // Listener
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                lat = location.getLatitude();
-                lon = location.getLongitude();
-                String exibir = String.format(Locale.getDefault(),"Lat: %f, Long: %f", lat, lon);
-                locationTextView.setText(exibir);
+                double lat = location.getLatitude();
+                double lon = location.getLongitude();
+                Localizacao l = new Localizacao(lat, lon);
+                localizacoes.add(l);
+                adapter.notifyDataSetChanged();
+                Toast.makeText(MainActivity.this, "Chamou", Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -79,37 +82,98 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
+    // Recyler View
+    private class MyViewHolder extends RecyclerView.ViewHolder{
+        TextView latitudeTextView;
+        TextView longitudeTextView;
+        public MyViewHolder (View raiz){
+            super(raiz);
+            latitudeTextView = raiz.findViewById(R.id.latitudeTextView);
+            longitudeTextView = raiz.findViewById(R.id.longitudeTextView);
+        }
+    }
+
+    private class MyAdapter extends RecyclerView.Adapter<MyViewHolder>{
+        List<Localizacao> localizacoes;
+
+        public MyAdapter(List<Localizacao> localizacoes){
+            this.localizacoes = localizacoes;
+        }
+
+        @NonNull
+        @Override
+        public MyViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+            Context context = viewGroup.getContext();
+            LayoutInflater inflater = LayoutInflater.from(context);
+            View raiz = inflater.inflate(R.layout.list_item, viewGroup, false);
+            return new MyViewHolder(raiz);
+        }
+
+        @Override
+        public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int i) {
+            Localizacao localizacao = localizacoes.get(i);
+            myViewHolder.latitudeTextView.setText(
+                    Double.toString(localizacao.latitude)
+            );
+            myViewHolder.longitudeTextView.setText(
+                    Double.toString(localizacao.longitude)
+            );
+        }
+
+        @Override
+        public int getItemCount() {
+            return localizacoes.size();
+        }
+    }
+
+    private class Localizacao{
+        double latitude;
+        double longitude;
+
+        public Localizacao (double latitude, double longitude){
+            this.latitude = latitude;
+            this.longitude = longitude;
+        }
+    }
+
+    // Ciclo de Vida
+
     @Override
     protected void onStart() {
         super.onStart();
         if(ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                    2000, 5, locationListener);
-        }else{
-            ActivityCompat.requestPermissions(this,
-                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_GPS);
+                Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(
+                    this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    1000
+            );
+        }
+        else{
+            locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    0,
+                    0,
+                    locationListener
+            );
         }
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
-        locationManager.removeUpdates(locationListener);
-    }
-
-    @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if(requestCode == REQUEST_CODE_GPS){
+        if(requestCode == 1000){
             if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
-                if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) ==
-                        PackageManager.PERMISSION_GRANTED) {
-                    locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-                            2000, 5, locationListener);
+                if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                        == PackageManager.PERMISSION_GRANTED){
+
+                    locationManager.requestLocationUpdates(
+                            LocationManager.GPS_PROVIDER,
+                            1,
+                            1,
+                            locationListener
+                    );
                 }
-            }else{
-                Toast.makeText(this, getString(R.string.no_gps_no_app), Toast.LENGTH_SHORT);
             }
         }
     }
