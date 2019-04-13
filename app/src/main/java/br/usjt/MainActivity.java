@@ -60,7 +60,12 @@ public class MainActivity extends AppCompatActivity {
                 double lat = location.getLatitude();
                 double lon = location.getLongitude();
                 Localizacao l = new Localizacao(lat, lon);
-                localizacoes.add(l);
+                if(localizacoes.size() >= 50){
+                    localizacoes.remove(0);
+                    localizacoes.add(l);
+                }else {
+                    localizacoes.add(l);
+                }
                 adapter.notifyDataSetChanged();
                 Toast.makeText(MainActivity.this, "Chamou", Toast.LENGTH_SHORT).show();
             }
