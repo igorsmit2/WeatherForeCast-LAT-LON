@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private List<Localizacao> localizacoes;
     private MyAdapter           adapter;
-    Context context;
+    private Context context;
     // API
     private LocationListener    locationListener;
     private LocationManager     locationManager;
