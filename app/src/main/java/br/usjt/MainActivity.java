@@ -111,6 +111,7 @@ public class MainActivity extends AppCompatActivity {
             return new MyViewHolder(raiz);
         }
 
+        // ViewHolder
         @Override
         public void onBindViewHolder(@NonNull MyViewHolder myViewHolder, int i) {
             Localizacao localizacao = localizacoes.get(i);
