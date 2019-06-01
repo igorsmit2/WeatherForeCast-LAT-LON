@@ -1,11 +1,15 @@
 package br.usjt;
 
-public class Localizacao {
-    double latitude;
-    double longitude;
+import java.io.Serializable;
 
-    public Localizacao (double latitude, double longitude){
+public class Localizacao implements Serializable {
+    public double latitude;
+    public double longitude;
+    public Clima clima;
+
+    public Localizacao(double latitude, double longitude, Clima clima) {
         this.latitude = latitude;
         this.longitude = longitude;
+        this.clima = clima;
     }
 }
